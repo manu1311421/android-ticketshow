@@ -1,0 +1,15 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:context="manuel.ticketshow.main" >
+    <item android:id="@+id/select_ticket"
+        android:title="@string/select_ticket"
+        android:orderInCategory="100"
+        app:showAsAction="never" />
+    <!--<item android:id="@+id/manage_brightness"-->
+        <!--android:title="@string/manage_brightness"-->
+        <!--android:orderInCategory="200"-->
+        <!--android:checkable="true"-->
+        <!--app:actionViewClass="android.widget.CheckBox"-->
+        <!--app:showAsAction="never" />-->
+</menu>
