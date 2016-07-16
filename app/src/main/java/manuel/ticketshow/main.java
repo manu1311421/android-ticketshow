@@ -2,7 +2,6 @@ package manuel.ticketshow;
 
 import android.Manifest;
 import android.app.Activity;
-//import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
@@ -18,16 +17,11 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
-//import android.util.Log;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
-
-//import android.view.WindowManager;
 import android.widget.ImageView;
 //import android.widget.Toast;
-
-//import java.security.Permission;
 
 
 public class main extends AppCompatActivity {
@@ -76,7 +70,6 @@ public class main extends AppCompatActivity {
                 SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
                 preferences.edit().putBoolean(PREFERENCES_KEY_PERMISSION_READ_EXTERNAL_STORAGE, false).apply();
             }
-            return;
         }
     }
 
