@@ -9,9 +9,11 @@ import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.provider.MediaStore;
+import android.provider.Settings;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
@@ -30,19 +32,19 @@ import android.widget.ImageView;
 
 public class main extends AppCompatActivity {
 
-//    private static int DEVICE_BRIGHTNESS = 60;
-//    private static int APP_BRIGHTNESS = 200;
-//    private static int DEVICE_BRIGHTNESS_MODE = 1;
-//    private static int APP_BRIGHTNESS_MODE = android.provider.Settings.System.SCREEN_BRIGHTNESS_MODE_MANUAL;
+    private static String PREFERENCES_KEY_IMAGE_PATH = "image_path";
+    private static String PREFERENCES_KEY_BRIGHTNESS_MANAGEMENT = "brightness_management";
+    private static String PREFERENCES_KEY_PERMISSION_WRITE_SETTINGS = "permission_write_settings";
+    private static String PREFERENCES_KEY_PERMISSION_READ_EXTERNAL_STORAGE = "permission_external_storage";
+
+    private static int DEVICE_BRIGHTNESS = 60;
+    private static int APP_BRIGHTNESS = 200;
+    private static int DEVICE_BRIGHTNESS_MODE = 1;
+    private static int APP_BRIGHTNESS_MODE = android.provider.Settings.System.SCREEN_BRIGHTNESS_MODE_MANUAL;
 
 //    private static final int PERMISSIONS_REQUEST_WRITE_SETTINGS = 0;
-//    private static boolean MANAGE_BRIGHTNESS = false;
-
     private static final int PERMISSIONS_REQUEST_READ_EXTERNAL_STORAGE = 1;
-
-
-    private static int IMAGE_REQUEST = 1;
-
+    private static int REQUEST_CODE_SELECT_IMAGE = 2;
 
     @Override
     public void onRequestPermissionsResult(int requestCode,
@@ -51,75 +53,100 @@ public class main extends AppCompatActivity {
 //            case PERMISSIONS_REQUEST_WRITE_SETTINGS: {
 //                if (grantResults.length > 0
 //                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-//                    MANAGE_BRIGHTNESS = true;
+//                    SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
+//                    preferences.edit().putBoolean(PREFERENCES_KEY_BRIGHTNESS_MANAGEMENT, true).apply();
+//                    preferences.edit().putBoolean(PREFERENCES_KEY_PERMISSION_WRITE_SETTINGS, true).apply();
+//
 //                } else {
-//                    MANAGE_BRIGHTNESS = false;
+//                    SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
+//                    preferences.edit().putBoolean(PREFERENCES_KEY_BRIGHTNESS_MANAGEMENT, false).apply();
+//                    preferences.edit().putBoolean(PREFERENCES_KEY_PERMISSION_WRITE_SETTINGS, false).apply();
 //                }
 //                return;
 //            }
 
-            case PERMISSIONS_REQUEST_READ_EXTERNAL_STORAGE: {
-                // If request is cancelled, the result arrays are empty.
-                if (grantResults.length > 0
-                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+        case PERMISSIONS_REQUEST_READ_EXTERNAL_STORAGE: {
+            // If request is cancelled, the result arrays are empty.
+            if (grantResults.length > 0
+                    && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
 
-                    SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
-                    preferences.edit().putBoolean("READ_EXTERNAL_STORAGE", true).apply();
-                } else {
-                    SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
-                    preferences.edit().putBoolean("READ_EXTERNAL_STORAGE", true).apply();
-                }
-                return;
+                SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
+                preferences.edit().putBoolean(PREFERENCES_KEY_PERMISSION_READ_EXTERNAL_STORAGE, true).apply();
+            } else {
+                SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
+                preferences.edit().putBoolean(PREFERENCES_KEY_PERMISSION_READ_EXTERNAL_STORAGE, false).apply();
             }
+            return;
         }
     }
+
+}
 
     @Override
     protected void onResume() {
         super.onResume();
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
 
-
-//        if (MANAGE_BRIGHTNESS) {
-//        Log.d("x", "Managing Brightness");
-//        DEVICE_BRIGHTNESS_MODE = getDeviceBrightnessMode();
-//        DEVICE_BRIGHTNESS = getDeviceBrightness();
-//        setAppBrightnessMode();
-//        setAppBrightness();
-//        }
+        // Check if we should manage brightness
+        boolean brightness_management = preferences.getBoolean(PREFERENCES_KEY_BRIGHTNESS_MANAGEMENT, false);
+        boolean permissions_write_settings = preferences.getBoolean(PREFERENCES_KEY_PERMISSION_WRITE_SETTINGS, false);
+        if (permissions_write_settings) {
+            Log.d("onResume", "Permission WRITE_SETTINGS ok");
+            if (brightness_management) {
+                Log.d("onResume", "Brightness management active");
+                startManageBrightness();
+            } else {
+                Log.d("onResume", "Brightness management not active");
+            }
+        } else {
+            Log.d("onResume", "Permission WRITE_SETTINGS not granted");
+        }
 
         // Check if an image has already been selected
-        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
-        String image_path = preferences.getString("IMAGE_PATH", "");
+        String image_path = preferences.getString(PREFERENCES_KEY_IMAGE_PATH, "");
         if (!image_path.equals("")) {
-            Log.d("onResume", "image path set");
+            Log.d("onResume", "Image path set");
             showImage(image_path);
-        }
-        else {
+        } else {
             // Todo: implement user notification to select a ticket
-            Log.d("onResume", "image path not set");
+            Log.d("onResume", "Image path not set");
+        }
+
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
+
+        // Check if we should manage brightness
+        boolean manage_brightness = preferences.getBoolean(PREFERENCES_KEY_BRIGHTNESS_MANAGEMENT, false);
+        if (manage_brightness) {
+            endManageBrightness();
         }
     }
 
-//    private void checkWriteSettingsPermission() {
-//        if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_SETTINGS)
-//                != PackageManager.PERMISSION_GRANTED) {
-//            if (ActivityCompat.shouldShowRequestPermissionRationale(this,
-//                    Manifest.permission.WRITE_SETTINGS)) {
-//
-//            } else {
-//                ActivityCompat.requestPermissions(this,
-//                        new String[]{Manifest.permission.WRITE_SETTINGS},
-//                        PERMISSIONS_REQUEST_WRITE_SETTINGS);
-//            }
-//        }
-//    }
+    private void checkWriteSettingsPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (Settings.System.canWrite(this)) {
+                SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
+                preferences.edit().putBoolean(PREFERENCES_KEY_PERMISSION_WRITE_SETTINGS, true).apply();
+            } else {
+                Intent intent = new Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS)
+                        .setData(Uri.parse("package:" + this.getPackageName()))
+                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                startActivity(intent);
+            }
+        }
+    }
 
     private void checkReadExternalStoragePermission() {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE)
                 != PackageManager.PERMISSION_GRANTED) {
             if (ActivityCompat.shouldShowRequestPermissionRationale(this,
                     Manifest.permission.READ_EXTERNAL_STORAGE)) {
-
+                SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
+                preferences.edit().putBoolean(PREFERENCES_KEY_PERMISSION_WRITE_SETTINGS, true).apply();
             } else {
                 ActivityCompat.requestPermissions(this,
                         new String[]{Manifest.permission.READ_EXTERNAL_STORAGE},
@@ -127,16 +154,6 @@ public class main extends AppCompatActivity {
             }
         }
     }
-
-    @Override
-    protected void onPause() {
-        super.onPause();
-//        if (MANAGE_BRIGHTNESS) {
-//        restoreDeviceBrightness();
-//        restoreDeviceBrightnessMode();
-//        }
-    }
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -148,68 +165,89 @@ public class main extends AppCompatActivity {
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.menu_main, menu);
         return true;
     }
 
-//    private int getDeviceBrightnessMode() {
-//        int brightness_mode = 1;
-//        try {
-//            brightness_mode = android.provider.Settings.System.getInt(getContentResolver(),
-//                    android.provider.Settings.System.SCREEN_BRIGHTNESS_MODE);
-//        } catch (Throwable ignored) {
-//        }
-//        return brightness_mode;
-//    }
+    private int getDeviceBrightnessMode() {
+        int brightness_mode = 1;  // Fallback value
+        try {
+            brightness_mode = android.provider.Settings.System.getInt(getContentResolver(),
+                    android.provider.Settings.System.SCREEN_BRIGHTNESS_MODE);
+        } catch (Throwable ignored) {
+        }
+        return brightness_mode;
+    }
 
-//    private int getDeviceBrightness() {
-//        int brightness = 200;
-//        try {
-//            brightness = android.provider.Settings.System.getInt(getContentResolver(),
-//                    android.provider.Settings.System.SCREEN_BRIGHTNESS);
-//        } catch (Throwable ignored) {
-//        }
-//        return brightness;
-//    }
+    private int getDeviceBrightness() {
+        int brightness = 200;  // Fallback value
+        try {
+            brightness = android.provider.Settings.System.getInt(getContentResolver(),
+                    android.provider.Settings.System.SCREEN_BRIGHTNESS);
+        } catch (Throwable ignored) {
+        }
+        return brightness;
+    }
 
-//    private void setAppBrightnessMode() {
-//        if (DEVICE_BRIGHTNESS_MODE != APP_BRIGHTNESS_MODE) {
-//            Log.d("x", "Came here");
-//            setBrightnessMode(APP_BRIGHTNESS_MODE);
-//        }
-//    }
+    private void setBrightnessMode(int brightness_mode) {
+        android.provider.Settings.System.putInt(getContentResolver(),
+                android.provider.Settings.System.SCREEN_BRIGHTNESS_MODE, brightness_mode);
+    }
 
-//    private void setAppBrightness() {
-//        setBrightness(APP_BRIGHTNESS);
-//    }
+    private void setBrightness(int brightness) {
+        android.provider.Settings.System.putInt(getContentResolver(),
+                android.provider.Settings.System.SCREEN_BRIGHTNESS, brightness);
+    }
 
-//    private void setBrightnessMode(int brightness_mode) {
-//        android.provider.Settings.System.putInt(getContentResolver(),
-//                android.provider.Settings.System.SCREEN_BRIGHTNESS_MODE, brightness_mode);
-//    }
+    private void startManageBrightness() {
+        DEVICE_BRIGHTNESS_MODE = getDeviceBrightnessMode();
+        DEVICE_BRIGHTNESS = getDeviceBrightness();
+        if (DEVICE_BRIGHTNESS_MODE != APP_BRIGHTNESS_MODE) {
+            setBrightnessMode(APP_BRIGHTNESS_MODE);
+        }
+        setBrightness(APP_BRIGHTNESS);
+    }
 
-//    private void setBrightness(int brightness) {
-//        android.provider.Settings.System.putInt(getContentResolver(),
-//                android.provider.Settings.System.SCREEN_BRIGHTNESS, brightness);
-//    }
-
-//    private void restoreDeviceBrightnessMode() {
-//        if (DEVICE_BRIGHTNESS_MODE != APP_BRIGHTNESS_MODE) {
-//            setBrightnessMode(DEVICE_BRIGHTNESS_MODE);
-//        }
-//    }
-
-//    private void restoreDeviceBrightness() {
-//        setBrightness(DEVICE_BRIGHTNESS);
-//    }
+    private void endManageBrightness() {
+        setBrightness(DEVICE_BRIGHTNESS);
+        if (DEVICE_BRIGHTNESS_MODE != APP_BRIGHTNESS_MODE) {
+            setBrightnessMode(DEVICE_BRIGHTNESS_MODE);
+        }
+    }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
-        if (id == R.id.select_ticket) {
-            selectImage();
-            return true;
+        switch (id) {
+            case R.id.select_ticket: {
+                Log.d("onOptionItemSelected", "Registered click on Select Ticket");
+                selectImage();
+                return true;
+            }
+            case R.id.manage_brightness: {
+                Log.d("onOptionItemSelected", "Registered click on Manage Brightness");
+
+                // Toggle brightness managing
+                SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
+                boolean manage_brightness = preferences.getBoolean(PREFERENCES_KEY_BRIGHTNESS_MANAGEMENT, false);
+                if (!manage_brightness) {
+                    Log.d("onOptionItemSelected", "Brightness management turned off: turn on");
+                    boolean permission_write_settings = preferences.getBoolean(PREFERENCES_KEY_PERMISSION_WRITE_SETTINGS, false);
+                    if (!permission_write_settings) {
+                        Log.d("onOptionItemSelected", "Permission WRITE_SETTINGS not granted, ask for permission");
+                        checkWriteSettingsPermission();
+                    }
+                    if (permission_write_settings) {
+                        preferences.edit().putBoolean(PREFERENCES_KEY_BRIGHTNESS_MANAGEMENT, true).apply();
+                        startManageBrightness();
+                    }
+                } else {
+                    Log.d("onOptionItemSelected", "Brightness management turned on: turn off");
+                    endManageBrightness();
+                    preferences.edit().putBoolean(PREFERENCES_KEY_BRIGHTNESS_MANAGEMENT, false).apply();
+                }
+                return true;
+            }
         }
         return super.onOptionsItemSelected(item);
     }
@@ -224,32 +262,31 @@ public class main extends AppCompatActivity {
         Intent chooserIntent = Intent.createChooser(getIntent, "Select Image");
         chooserIntent.putExtra(Intent.EXTRA_INITIAL_INTENTS, new Intent[]{pickIntent});
 
-        startActivityForResult(chooserIntent, IMAGE_REQUEST);
+        startActivityForResult(chooserIntent, REQUEST_CODE_SELECT_IMAGE);
     }
 
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == 1 && resultCode == Activity.RESULT_OK) {
+        if (requestCode == REQUEST_CODE_SELECT_IMAGE && resultCode == Activity.RESULT_OK) {
             if (data == null) {
+                Log.d("onActivityResult", "No data returned in Select Image action");
                 return;
             }
-
-            Uri selectedImage = data.getData();
+            Uri selected_image = data.getData();
             String[] filePathColumn = {MediaStore.Images.Media.DATA};
-
-            Cursor cursor = getContentResolver().query(selectedImage,
-                    filePathColumn, null, null, null);
-            cursor.moveToFirst();
-
-            int columnIndex = cursor.getColumnIndex(filePathColumn[0]);
-
-            String image_path = cursor.getString(columnIndex);
+            Cursor cursor = getContentResolver().query(selected_image, filePathColumn,
+                    null, null, null);
+            if (cursor != null) {
+                cursor.moveToFirst();
+            }
+            int column_index = cursor.getColumnIndex(filePathColumn[0]);
+            String image_path = cursor.getString(column_index);
             cursor.close();
 
             // Store the image path
             SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
-            preferences.edit().putString("IMAGE_PATH", image_path).apply();
+            preferences.edit().putString(PREFERENCES_KEY_IMAGE_PATH, image_path).apply();
 
             showImage(image_path);
         }
@@ -257,13 +294,13 @@ public class main extends AppCompatActivity {
 
     private void showImage(String image_path) {
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
-        boolean media_access = preferences.getBoolean("READ_EXTERNAL_STORAGE", false);
-        if (media_access) {
-            Log.d("showImage", "permissions ok, updating image");
+        boolean permission_read_external_storage = preferences.getBoolean(PREFERENCES_KEY_PERMISSION_READ_EXTERNAL_STORAGE, false);
+        if (permission_read_external_storage) {
+            Log.d("showImage", "Permissions READ_EXTERNAL_STORAGE ok: show image");
             ImageView imageview = (ImageView) findViewById(R.id.image_view);
             imageview.setImageBitmap(BitmapFactory.decodeFile(image_path));
         } else {
-            Log.d("showImage", "request permissions");
+            Log.d("showImage", "Permission READ_EXTERNAL_STORAGE request");
             checkReadExternalStoragePermission();
         }
     }
