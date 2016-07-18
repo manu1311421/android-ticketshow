@@ -20,6 +20,7 @@ import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.CheckBox;
 import android.widget.ImageView;
 //import android.widget.Toast;
 
@@ -36,9 +37,9 @@ public class main extends AppCompatActivity {
     private static int DEVICE_BRIGHTNESS_MODE = 1;
     private static int APP_BRIGHTNESS_MODE = android.provider.Settings.System.SCREEN_BRIGHTNESS_MODE_MANUAL;
 
-//    private static final int PERMISSIONS_REQUEST_WRITE_SETTINGS = 0;
+    //    private static final int PERMISSIONS_REQUEST_WRITE_SETTINGS = 0;
     private static final int PERMISSIONS_REQUEST_READ_EXTERNAL_STORAGE = 1;
-    private static int REQUEST_CODE_SELECT_IMAGE = 2;
+    private static final int REQUEST_SELECT_IMAGE = 2;
 
     @Override
     public void onRequestPermissionsResult(int requestCode,
@@ -59,21 +60,19 @@ public class main extends AppCompatActivity {
 //                return;
 //            }
 
-        case PERMISSIONS_REQUEST_READ_EXTERNAL_STORAGE: {
-            // If request is cancelled, the result arrays are empty.
-            if (grantResults.length > 0
-                    && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-
-                SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
-                preferences.edit().putBoolean(PREFERENCES_KEY_PERMISSION_READ_EXTERNAL_STORAGE, true).apply();
-            } else {
-                SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
-                preferences.edit().putBoolean(PREFERENCES_KEY_PERMISSION_READ_EXTERNAL_STORAGE, false).apply();
+            case PERMISSIONS_REQUEST_READ_EXTERNAL_STORAGE: {
+                // If request is cancelled, the result arrays are empty.
+                if (grantResults.length > 0
+                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
+                    preferences.edit().putBoolean(PREFERENCES_KEY_PERMISSION_READ_EXTERNAL_STORAGE, true).apply();
+                } else {
+                    SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
+                    preferences.edit().putBoolean(PREFERENCES_KEY_PERMISSION_READ_EXTERNAL_STORAGE, false).apply();
+                }
             }
         }
     }
-
-}
 
     @Override
     protected void onResume() {
@@ -122,8 +121,6 @@ public class main extends AppCompatActivity {
     private void checkWriteSettingsPermission() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             if (Settings.System.canWrite(this)) {
-                SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
-                preferences.edit().putBoolean(PREFERENCES_KEY_PERMISSION_WRITE_SETTINGS, true).apply();
             } else {
                 Intent intent = new Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS)
                         .setData(Uri.parse("package:" + this.getPackageName()))
@@ -198,12 +195,21 @@ public class main extends AppCompatActivity {
             setBrightnessMode(APP_BRIGHTNESS_MODE);
         }
         setBrightness(APP_BRIGHTNESS);
+        final CheckBox checkBox = (CheckBox) findViewById(R.id.manage_brightness);
+        if (checkBox.isChecked()) {
+            checkBox.setChecked(true);
+        }
+
     }
 
     private void endManageBrightness() {
         setBrightness(DEVICE_BRIGHTNESS);
         if (DEVICE_BRIGHTNESS_MODE != APP_BRIGHTNESS_MODE) {
             setBrightnessMode(DEVICE_BRIGHTNESS_MODE);
+        }
+        final CheckBox checkBox = (CheckBox) findViewById(R.id.manage_brightness);
+        if (checkBox.isChecked()) {
+            checkBox.setChecked(false);
         }
     }
 
@@ -254,33 +260,39 @@ public class main extends AppCompatActivity {
         Intent chooserIntent = Intent.createChooser(getIntent, "Select Image");
         chooserIntent.putExtra(Intent.EXTRA_INITIAL_INTENTS, new Intent[]{pickIntent});
 
-        startActivityForResult(chooserIntent, REQUEST_CODE_SELECT_IMAGE);
+        startActivityForResult(chooserIntent, REQUEST_SELECT_IMAGE);
     }
 
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == REQUEST_CODE_SELECT_IMAGE && resultCode == Activity.RESULT_OK) {
-            if (data == null) {
-                Log.d("onActivityResult", "No data returned in Select Image action");
-                return;
-            }
-            Uri selected_image = data.getData();
-            String[] filePathColumn = {MediaStore.Images.Media.DATA};
-            Cursor cursor = getContentResolver().query(selected_image, filePathColumn,
-                    null, null, null);
-            if (cursor != null) {
-                cursor.moveToFirst();
-            }
-            int column_index = cursor.getColumnIndex(filePathColumn[0]);
-            String image_path = cursor.getString(column_index);
-            cursor.close();
 
-            // Store the image path
-            SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
-            preferences.edit().putString(PREFERENCES_KEY_IMAGE_PATH, image_path).apply();
+        switch (requestCode) {
+            case REQUEST_SELECT_IMAGE: {
+                if (resultCode == Activity.RESULT_OK) {
+                    if (data == null) {
+                        Log.d("onActivityResult", "No data returned in Select Image action");
+                        return;
+                    }
+                    Uri selected_image = data.getData();
+                    String[] filePathColumn = {MediaStore.Images.Media.DATA};
+                    Cursor cursor = getContentResolver().query(selected_image, filePathColumn,
+                            null, null, null);
+                    if (cursor != null) {
+                        cursor.moveToFirst();
+                    }
+                    int column_index = cursor.getColumnIndex(filePathColumn[0]);
+                    String image_path = cursor.getString(column_index);
+                    cursor.close();
 
-            showImage(image_path);
+                    // Store the image path
+                    SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
+                    preferences.edit().putString(PREFERENCES_KEY_IMAGE_PATH, image_path).apply();
+
+                    showImage(image_path);
+
+                }
+            }
         }
     }
 
