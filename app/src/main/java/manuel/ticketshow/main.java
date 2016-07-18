@@ -138,8 +138,7 @@ public class main extends AppCompatActivity {
                 != PackageManager.PERMISSION_GRANTED) {
             if (ActivityCompat.shouldShowRequestPermissionRationale(this,
                     Manifest.permission.READ_EXTERNAL_STORAGE)) {
-                SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
-                preferences.edit().putBoolean(PREFERENCES_KEY_PERMISSION_WRITE_SETTINGS, true).apply();
+                // Todo: Explain why we need this permission
             } else {
                 ActivityCompat.requestPermissions(this,
                         new String[]{Manifest.permission.READ_EXTERNAL_STORAGE},
