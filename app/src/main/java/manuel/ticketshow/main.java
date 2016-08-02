@@ -2,9 +2,7 @@ package manuel.ticketshow;
 
 import android.Manifest;
 import android.app.Activity;
-import android.app.AlertDialog;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
@@ -93,6 +91,17 @@ public class main extends AppCompatActivity {
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.menu_main, menu);
+
+        // Set checked state of the key according to shared preferences
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
+        boolean brightness_management = preferences.getBoolean(PREFERENCES_KEY_BRIGHTNESS_MANAGEMENT, false);
+        if (brightness_management) {
+            MenuItem menu_item = menu.findItem(R.id.manage_brightness);
+            menu_item.setChecked(true);
+        } else {
+            MenuItem menu_item = menu.findItem(R.id.manage_brightness);
+            menu_item.setChecked(false);
+        }
         return true;
     }
 
@@ -132,10 +141,12 @@ public class main extends AppCompatActivity {
                     Log.d("onOptionItemSelected", "Brightness management turned off: turn on");
                     preferences.edit().putBoolean(PREFERENCES_KEY_BRIGHTNESS_MANAGEMENT, true).apply();
                     startManageBrightness();
+                    item.setChecked(true);
                 } else {
                     Log.d("onOptionItemSelected", "Brightness management turned on: turn off");
                     endManageBrightness();
                     preferences.edit().putBoolean(PREFERENCES_KEY_BRIGHTNESS_MANAGEMENT, false).apply();
+                    item.setChecked(false);
                 }
                 return true;
             }
@@ -211,14 +222,10 @@ public class main extends AppCompatActivity {
     private void startManageBrightness() {
         float app_brightness = 1.0f;
         setBrightness(app_brightness);
-//        MenuItem item = (MenuItem) findViewById(R.id.manage_brightness);
-//        item.setChecked(true);
     }
 
     private void endManageBrightness() {
         float device_brightness = -1.0f;
         setBrightness(device_brightness);
-//        MenuItem item = (MenuItem) findViewById(R.id.manage_brightness);
-//        item.setChecked(false);
     }
 }
