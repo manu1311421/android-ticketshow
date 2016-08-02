@@ -2,6 +2,9 @@ package manuel.ticketshow;
 
 import android.Manifest;
 import android.app.Activity;
+import android.app.AlertDialog;
+import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
@@ -24,7 +27,6 @@ import android.widget.Toast;
 
 
 public class main extends AppCompatActivity {
-
     private static String PREFERENCES_KEY_IMAGE_PATH = "image_path";
     private static String PREFERENCES_KEY_BRIGHTNESS_MANAGEMENT = "brightness_management";
     private static String PREFERENCES_KEY_PERMISSION_READ_EXTERNAL_STORAGE = "permission_external_storage";
@@ -52,7 +54,11 @@ public class main extends AppCompatActivity {
             Log.d("onResume", "Image path set");
             showImage(image_path);
         } else {
-            // Todo: implement user notification to select a ticket
+            Context context = getApplicationContext();
+            CharSequence text = "Please select an image.";
+            int duration = Toast.LENGTH_SHORT;
+            Toast toast = Toast.makeText(context, text, duration);
+            toast.show();
             Log.d("onResume", "Image path not set");
         }
     }
