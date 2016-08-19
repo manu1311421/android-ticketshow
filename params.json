@@ -1,0 +1,6 @@
+{
+  "name": "Android-ticketshow",
+  "tagline": "An app for Android",
+  "body": "# android-ticketshow\r\nAn app for Android.\r\n\r\nTicketShow displays an image scaled to the screen width. This is useful for presenting a public transportation ticket.\r\n\r\nIt optionally can increase the screen brightness. This increases the success rate of scanners for automatic ticket check.\r\n\r\n[Download the app](https://github.com/manu1311421/android-ticketshow/raw/master/app/app-release.apk)\r\n",
+  "note": "Don't delete this file! It's used internally to help with page regeneration."
+}
